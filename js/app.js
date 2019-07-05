@@ -11,16 +11,15 @@ var columnas = $(".panel-tablero").children(),
     score = 0;
 
 //Punto 2.- Agrega los dulces al tablero
-
 function addCandy(){
   result = false;
-  if (columnas[0].children.length) {
+  if (columnas[0].children.length) { //Entra si ya hay dulces en el tablero
     console.log("Ya hay dulces");
     for (var i = 0; i < columnas.length; i++) {
       while (columnas[i].children.length <= 5) {
-        var dulce = 1 + Math.floor(Math.random() * 4);
+        var dulce = 1 + Math.floor(Math.random() * 4); //Genera número aleatorio
         var nuevaImagen = $('<img>', {"src": "image/" + dulce + ".png"});
-        $(columnas[i]).prepend(nuevaImagen);
+        $(columnas[i]).prepend(nuevaImagen); //Prepend para que se añadan al inicio del arreglo
         }
       }
     }
@@ -36,14 +35,6 @@ function addCandy(){
     }
   }
   findGroups();
-}
-
-//hace que el caramelo sea solido al moverse
-function constrainCandyMovement(event, candyDrag) {
-	candyDrag.position.top = Math.min(100, candyDrag.position.top);
-	candyDrag.position.bottom = Math.min(100, candyDrag.position.bottom);
-	candyDrag.position.left = Math.min(180, candyDrag.position.left);
-	candyDrag.position.right = Math.min(80, candyDrag.position.right);
 }
 
 //Punto 3.- Revisa si hay mas de 3 dulces seguidos para eliminarlos
@@ -70,7 +61,7 @@ function findGroups(){
             console.log("Hay un grupo vertical de " + matchlength + " dulces");
             puntaje(matchlength);
             grupos.push({column: i, row: j+1-matchlength,
-                          length: matchlength, horizontal: false});
+                          length: matchlength, horizontal: false}); //Se agrega al arreglo grupos
           }
           matchlength = 1;
         }
@@ -105,7 +96,7 @@ function findGroups(){
     resolveGroups();
 }
 
-function puntaje(matchlength){
+function puntaje(matchlength){ //Determina los puntos a sumar según de cuantas piezas sea el grupo
   if (matchlength == 3) {
     score = score + 30;
     $("#score-text").text(score);
@@ -123,23 +114,21 @@ function puntaje(matchlength){
 }
 
 function resolveGroups(){
-  //Check for groups
-  if (grupos.length > 0) {
-    //Borra los grupos
-    removeGroup();
+  if (grupos.length > 0) { //Entra si hay grupos
+    removeGroup(); //Borra los grupos
   }
 }
 
 function removeGroup(){
   loopGroups(function(index,col,row, grupo){
-    $(columnas[col].children[row]).addClass("delete");
+    $(columnas[col].children[row]).addClass("delete"); //Asigna la clase delete a los dulces que se van a eliminar
   });
   console.table(grupos);
   $(".delete").effect("pulsate", function(){
     $(".delete").remove();
   });
   deletesCandy()
-    .then(addCandy)
+    .then(addCandy) //Agrega mas dulces cuando ya se elimianron los anteriores
     .catch(showPromiseError);
 }
 
@@ -162,7 +151,7 @@ function loopGroups(func){
 
 
 function deletesCandy(){
-  return new Promise(function (resolve, reject) {
+  return new Promise(function (resolve, reject) { // Promesa para esperar a que se eliminen los dulces en la funcion removeGroup
     setTimeout(() =>{
       if ($('.delete').length == 0) {
   			resolve();
@@ -177,29 +166,31 @@ function showPromiseError(error) {
 	console.log(error);
 }
 
-function gameOver(){
+function gameOver(){ //Cuando termina el juego
   $(".panel-tablero, .time").effect('fold');
   $(".panel-score").before("<h1 class='titulo-over'>Juego Terminado</h1>");
   $(".panel-score").css("width", "100%");
+  $(".score, .moves").css("height", "35%");
+  $(".score, .moves").css("font-size", "30px");
 }
 
-function swap(){
+function swap(){ //Se establecen los parámetros para drag & drop
   for (var i = 0; i < columnas.length; i++) {
     for (var j = 0; j < columnas[j].children.length; j++) {
       $(columnas[i].children[j]).draggable({
         containment: ".panel-tablero",
         revert: true,
         // grid: [50,50],
-        zIndex: 10
-        // drag: constrainCandyMovement
+        zIndex: 10,
+        drag: constrainCandyMovement
       });
-      if (columnas[i].children == columnas[0].children) {
+      if (columnas[i].children == columnas[0].children) { //Entra si es la primera columna
         var primera = [columnas[i+1].children[j], columnas[i].children[j+1], columnas[i].children[j-1]]
           $(columnas[i].children[j]).droppable({
             accept: primera,
             drop: moveCandy
         });
-      }else if (columnas[i].children == columnas[6].children) {
+      }else if (columnas[i].children == columnas[6].children) { //Entra si es la última columna
           var ultima = [columnas[i-1].children[j], columnas[i].children[j+1], columnas[i].children[j-1]]
           $(columnas[i].children[j]).droppable({
             accept: ultima,
@@ -216,7 +207,16 @@ function swap(){
   }
 }
 
-function moveCandy(event, candyDrag){
+//Delimita cuanto puede moverse un dulce
+function constrainCandyMovement(event, candyDrag) {
+	candyDrag.position.top = Math.min(120, candyDrag.position.top);
+	candyDrag.position.top = Math.max(-120, candyDrag.position.top);
+	candyDrag.position.left = Math.min(130, candyDrag.position.left);
+	candyDrag.position.left = Math.max(-130, candyDrag.position.left);
+}
+
+
+function moveCandy(event, candyDrag){ //Intercambia las posiciones de los dulces
   moves = 0;
   var candyDrag = $(candyDrag.draggable);
   var dragSrc = candyDrag.attr('src');
@@ -225,7 +225,7 @@ function moveCandy(event, candyDrag){
   candyDrag.attr('src', dropSrc);
   candyDrop.attr('src', dragSrc);
   findGroups();
-  if (grupos.length == 0) {
+  if (grupos.length == 0) { //Si no hay ningún grupo, no pasa nada
     candyDrag.attr('src', dragSrc);
     candyDrop.attr('src', dropSrc);
   }else {
